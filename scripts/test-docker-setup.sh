@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Docker Setup Test Script
-# Verifies that Docker environment is ready for RaidScanner
+# Verifies that Docker environment is ready for GuardScan
 
-echo "🔍 Testing RaidScanner Docker Setup"
-echo "===================================="
+echo "🔍 Testing GuardScan Docker Setup"
+echo "==================================="
 echo ""
 
 # Color codes
@@ -149,7 +149,7 @@ if [ $FAILED -eq 0 ]; then
     echo ""
     echo "Next steps:"
     echo "  1. Build the image: docker compose build"
-    echo "  2. Run the scanner: docker compose run --rm raidscanner"
+    echo "  2. Run the scanner: docker compose run --rm guardscan-cli"
     echo "  or simply run: ./docker-run.sh"
     exit 0
 else

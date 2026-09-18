@@ -1,4 +1,4 @@
-# RaidScanner Docker - Dependency Management
+# GuardScan Docker - Dependency Management
 # All dependencies are pinned to specific versions for reproducibility
 
 ## Core Dependencies

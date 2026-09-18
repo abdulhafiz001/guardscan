@@ -29,6 +29,7 @@ python-socketio==5.11.0
 eventlet==0.36.1
 
 # Additional Dependencies
+reportlab>=4.0.0
 packaging==24.2
 certifi==2024.8.30
 charset-normalizer==3.4.0

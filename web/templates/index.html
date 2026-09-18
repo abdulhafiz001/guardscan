@@ -1,88 +1,381 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RaidScanner - Web Vulnerability Scanner</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            color: #fff;
+    <title>GuardScan - Security Operations Dashboard & Vulnerability Scanner</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        },
+                        dark: {
+                            card: '#1e293b',
+                            bg: '#0f172a',
+                            border: '#334155',
+                            hover: '#334155'
+                        }
+                    }
+                }
+            }
         }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        h1 { text-align: center; margin: 40px 0; font-size: 2.5rem; }
-        h1 span { color: #e94560; }
-        .subtitle { text-align: center; color: #aaa; margin-bottom: 40px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 15px;
-            padding: 30px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            background: rgba(255,255,255,0.1);
-            border-color: #e94560;
-        }
-        .card h3 { color: #e94560; margin-bottom: 10px; font-size: 1.5rem; }
-        .card p { color: #aaa; line-height: 1.6; }
-        .card .icon { font-size: 3rem; margin-bottom: 15px; }
-        footer { text-align: center; margin-top: 60px; color: #666; padding: 20px; }
-        a { color: #e94560; text-decoration: none; }
-    </style>
+    </script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
 </head>
-<body>
-    <div class="container">
-        <h1>Raid<span>Scanner</span></h1>
-        <p class="subtitle">Modern Web Vulnerability Scanner for Ethical Hacking</p>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-white">
 
-        <div class="grid">
-            <a href="/scanner/lfi" class="card">
-                <div class="icon">📁</div>
-                <h3>LFI Scanner</h3>
-                <p>Local File Inclusion vulnerability detection. Tests for path traversal and file access vulnerabilities.</p>
-            </a>
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-shield-halved text-white text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-black tracking-tight text-white">GUARD<span class="text-cyan-400">SCAN</span></span>
+                    <span class="ml-2 px-2 py-0.5 text-xs font-semibold rounded bg-cyan-950 text-cyan-400 border border-cyan-800">v2.5 PRO</span>
+                </div>
+            </div>
 
-            <a href="/scanner/sqli" class="card">
-                <div class="icon">💉</div>
-                <h3>SQLi Scanner</h3>
-                <p>SQL Injection vulnerability detection. Tests for authentication bypass and data extraction.</p>
-            </a>
-
-            <a href="/scanner/xss" class="card">
-                <div class="icon">⚡</div>
-                <h3>XSS Scanner</h3>
-                <p>Cross-Site Scripting vulnerability detection. Tests for reflected and stored XSS.</p>
-            </a>
-
-            <a href="/scanner/or" class="card">
-                <div class="icon">🔗</div>
-                <h3>Open Redirect</h3>
-                <p>Open Redirect vulnerability detection. Tests for URL redirection flaws.</p>
-            </a>
-
-            <a href="/scanner/crlf" class="card">
-                <div class="icon">📝</div>
-                <h3>CRLF Injection</h3>
-                <p>HTTP Response Splitting detection. Tests for header injection vulnerabilities.</p>
-            </a>
-
-            <a href="/reports" class="card">
-                <div class="icon">📊</div>
-                <h3>Reports</h3>
-                <p>View and download scan reports. Historical vulnerability data and analysis.</p>
-            </a>
+            <div class="flex items-center space-x-4">
+                <div id="connectionStatus" class="flex items-center text-xs font-medium px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400">
+                    <span class="w-2 h-2 rounded-full bg-slate-500 mr-2"></span>
+                    Initializing...
+                </div>
+                <a href="/reports" class="inline-flex items-center space-x-2 text-sm font-medium px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition">
+                    <i class="fa-solid fa-folder-closed text-slate-400"></i>
+                    <span>Archived Reports</span>
+                </a>
+            </div>
         </div>
+    </header>
 
-        <footer>
-            <p>RaidScanner - For educational and authorized security testing only.</p>
-        </footer>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- 1. Metrics & Overview Summary Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- Security Posture Grade -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm relative overflow-hidden group hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Security Health Score</span>
+                    <i class="fa-solid fa-heart-pulse text-emerald-400"></i>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-3">
+                    <span id="metricScore" class="text-3xl font-black text-emerald-400">100</span>
+                    <span id="metricGrade" class="text-sm font-bold text-slate-400">/ 100 (Grade A)</span>
+                </div>
+                <div class="mt-3 w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div id="metricScoreBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- Vulnerabilities Found -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Vulnerabilities</span>
+                    <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-2">
+                    <span id="metricVulns" class="text-3xl font-black text-rose-500">0</span>
+                    <span class="text-xs font-medium text-slate-400">flagged issues</span>
+                </div>
+                <div class="mt-2 flex items-center space-x-2 text-xs">
+                    <span class="px-2 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-800 font-semibold" id="countCrit">0 Crit</span>
+                    <span class="px-2 py-0.5 rounded bg-orange-950/80 text-orange-400 border border-orange-800 font-semibold" id="countHigh">0 High</span>
+                    <span class="px-2 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800 font-semibold" id="countMed">0 Med</span>
+                </div>
+            </div>
+
+            <!-- Total Requests / Tested Endpoints -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Requests Processed</span>
+                    <i class="fa-solid fa-network-wired text-cyan-400"></i>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-2">
+                    <span id="metricScanned" class="text-3xl font-black text-cyan-400">0</span>
+                    <span class="text-xs font-medium text-slate-400">payload checks</span>
+                </div>
+                <p class="mt-2 text-xs text-slate-400 flex items-center">
+                    <span class="inline-block w-2 h-2 rounded-full bg-cyan-500 mr-2"></span>
+                    Async pooled HTTP execution
+                </p>
+            </div>
+
+            <!-- Average Response Latency -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Avg Probe Latency</span>
+                    <i class="fa-solid fa-gauge-high text-blue-400"></i>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-2">
+                    <span id="metricLatency" class="text-3xl font-black text-blue-400">0.00s</span>
+                    <span class="text-xs font-medium text-slate-400">response time</span>
+                </div>
+                <p class="mt-2 text-xs text-slate-400">Monitored round-trip time</p>
+            </div>
+        </section>
+
+        <!-- 2. Interactive Scan Studio & Config Panel -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <div class="border-b border-slate-800 pb-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-sliders text-cyan-400"></i>
+                        <span>Scan Configuration Studio</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Configure target endpoints, select attack modules, and toggle dual-token BOLA or Gateway probes.</p>
+                </div>
+
+                <!-- Fast preset target helpers -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400 font-medium">Quick Preset:</span>
+                    <button type="button" onclick="loadPreset('dvwu')" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">DVWU Local</button>
+                    <button type="button" onclick="loadPreset('api')" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">REST API Sample</button>
+                    <button type="button" onclick="loadPreset('webhook')" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Paystack / FLW</button>
+                </div>
+            </div>
+
+            <form id="scanConfigForm" onsubmit="handleStartScan(event)" class="space-y-6">
+                <!-- Module Selection Pills -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Vulnerability Module</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                        <button type="button" onclick="selectModule('bola')" id="mod-bola" class="module-pill px-3 py-2.5 rounded-xl border text-left transition flex flex-col justify-between bg-cyan-950/40 border-cyan-500 text-cyan-300 shadow-sm shadow-cyan-500/10">
+                            <span class="text-xs font-bold flex items-center justify-between">
+                                BOLA / IDOR
+                                <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                            </span>
+                            <span class="text-[10px] text-slate-400 mt-1">Dual-Token API</span>
+                        </button>
+
+                        <button type="button" onclick="selectModule('gateway')" id="mod-gateway" class="module-pill px-3 py-2.5 rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800/80 text-slate-300 text-left transition flex flex-col justify-between">
+                            <span class="text-xs font-bold">Fintech Gateway</span>
+                            <span class="text-[10px] text-slate-400 mt-1">Paystack / FLW</span>
+                        </button>
+
+                        <button type="button" onclick="selectModule('lfi')" id="mod-lfi" class="module-pill px-3 py-2.5 rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800/80 text-slate-300 text-left transition flex flex-col justify-between">
+                            <span class="text-xs font-bold">LFI Traversal</span>
+                            <span class="text-[10px] text-slate-400 mt-1">File Inclusion</span>
+                        </button>
+
+                        <button type="button" onclick="selectModule('sqli')" id="mod-sqli" class="module-pill px-3 py-2.5 rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800/80 text-slate-300 text-left transition flex flex-col justify-between">
+                            <span class="text-xs font-bold">SQL Injection</span>
+                            <span class="text-[10px] text-slate-400 mt-1">Database Flaws</span>
+                        </button>
+
+                        <button type="button" onclick="selectModule('xss')" id="mod-xss" class="module-pill px-3 py-2.5 rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800/80 text-slate-300 text-left transition flex flex-col justify-between">
+                            <span class="text-xs font-bold">XSS Scripting</span>
+                            <span class="text-[10px] text-slate-400 mt-1">DOM / Reflected</span>
+                        </button>
+
+                        <button type="button" onclick="selectModule('or')" id="mod-or" class="module-pill px-3 py-2.5 rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800/80 text-slate-300 text-left transition flex flex-col justify-between">
+                            <span class="text-xs font-bold">Open Redirect</span>
+                            <span class="text-[10px] text-slate-400 mt-1">URL Redirection</span>
+                        </button>
+
+                        <button type="button" onclick="selectModule('crlf')" id="mod-crlf" class="module-pill px-3 py-2.5 rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-800/80 text-slate-300 text-left transition flex flex-col justify-between">
+                            <span class="text-xs font-bold">CRLF Injection</span>
+                            <span class="text-[10px] text-slate-400 mt-1">Header Splitting</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Target URLs Input -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-2">
+                        <label for="urlsInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 flex justify-between">
+                            <span>Target URL(s) or API Endpoints</span>
+                            <span class="text-slate-500 font-normal">One endpoint per line</span>
+                        </label>
+                        <textarea id="urlsInput" rows="4" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 font-mono placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" placeholder="https://api.example.com/v1/orders/101&#10;https://api.example.com/v1/users/42"></textarea>
+                    </div>
+
+                    <!-- General Settings -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Concurrency & Rate</label>
+                            <div class="flex items-center space-x-3">
+                                <input type="range" id="threadRange" min="1" max="10" value="5" oninput="document.getElementById('threadValue').innerText = this.value" class="w-full accent-cyan-500">
+                                <span id="threadValue" class="text-sm font-bold text-cyan-400 w-8 text-center">5</span>
+                                <span class="text-xs text-slate-500">threads</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Automatic Reports</label>
+                            <div class="space-y-1 text-xs text-slate-300">
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="genPdf" checked class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-cyan-500">
+                                    <span>Build Developer Remediation PDF Report</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOLA Dual-Token Context (Conditionally Displayed) -->
+                <div id="bolaConfigSection" class="p-4 rounded-xl bg-slate-950/80 border border-cyan-900/40 space-y-4">
+                    <div class="flex items-center space-x-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-key"></i>
+                        <span>BOLA / IDOR Dual-User Authentication Context</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">User A Token (Legitimate Resource Owner)</label>
+                            <input type="text" id="tokenA" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:border-cyan-500 focus:outline-none" placeholder="eyJhbGciOi... (Bearer token A)">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">User B Token (Unauthorized Attacker Token)</label>
+                            <input type="text" id="tokenB" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:border-cyan-500 focus:outline-none" placeholder="eyJhbGciOi... (Bearer token B)">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">ID Fuzzing Variations (Comma-separated object IDs)</label>
+                        <input type="text" id="idVariations" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:border-cyan-500 focus:outline-none" placeholder="101, 102, 103, 104, 105">
+                    </div>
+                </div>
+
+                <!-- Launch Button & Status -->
+                <div class="flex items-center justify-between pt-2">
+                    <div class="text-xs text-slate-400" id="scanStatusMsg">
+                        Ready to start security scan.
+                    </div>
+                    <button type="submit" id="startScanBtn" class="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/25 transition transform active:scale-95 disabled:opacity-50">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Launch Scanner</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 3. Real-Time Scan Progress Banner -->
+        <section id="progressSection" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between text-xs font-semibold">
+                <span class="text-cyan-400 flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    <span id="progressStatusLabel">Executing Active Vulnerability Probes...</span>
+                </span>
+                <span id="progressPctText" class="text-slate-300">0%</span>
+            </div>
+            <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
+                <div id="progressBar" class="bg-gradient-to-r from-cyan-500 to-blue-600 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center justify-between font-mono">
+                <span id="currentTestingUrl" class="truncate max-w-lg">Target: Initializing...</span>
+                <span id="progressRatio">0 / 0</span>
+            </div>
+        </section>
+
+        <!-- 4. Interactive Vulnerability Matrix & Findings Table -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-bug text-rose-400"></i>
+                        <span>Interactive Vulnerability Matrix</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Live detected flaws with CVSS scores, evidence, and remediation snippets.</p>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <!-- Filter Dropdown -->
+                    <select id="severityFilter" onchange="filterFindings()" class="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-500">
+                        <option value="all">All Severities</option>
+                        <option value="vuln-only">Vulnerable Findings Only</option>
+                        <option value="critical">Critical Only</option>
+                        <option value="high">High Only</option>
+                        <option value="medium">Medium Only</option>
+                    </select>
+
+                    <!-- One-Click Export Buttons -->
+                    <button id="downloadPdfBtn" onclick="triggerLatestExport('pdf')" disabled class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-800 text-xs font-semibold transition disabled:opacity-40">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>Export PDF</span>
+                    </button>
+                    <button id="downloadJsonBtn" onclick="triggerLatestExport('json')" disabled class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition disabled:opacity-40">
+                        <i class="fa-solid fa-file-code"></i>
+                        <span>JSON</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                        <tr>
+                            <th class="py-3 px-4">Status</th>
+                            <th class="py-3 px-4">Severity & CVSS</th>
+                            <th class="py-3 px-4">Vulnerability Title</th>
+                            <th class="py-3 px-4">Endpoint</th>
+                            <th class="py-3 px-4">Latency</th>
+                            <th class="py-3 px-4 text-right">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="findingsTableBody" class="divide-y divide-slate-800">
+                        <tr id="emptyFindingsRow">
+                            <td colspan="6" class="py-12 text-center text-slate-500">
+                                <i class="fa-solid fa-radar text-3xl mb-3 block text-slate-600"></i>
+                                No active scan findings yet. Launch a scan above to populate live findings.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal for Detailed Evidence and Code Snippet -->
+    <div id="detailModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="modalTitle" class="text-base font-bold text-white">Vulnerability Finding Details</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <span class="text-slate-400 font-semibold uppercase">Target URL:</span>
+                    <p id="modalUrl" class="font-mono text-cyan-400 break-all mt-0.5"></p>
+                </div>
+                <div>
+                    <span class="text-slate-400 font-semibold uppercase">Classification & Vector:</span>
+                    <p id="modalClassification" class="text-slate-300 mt-0.5"></p>
+                </div>
+                <div>
+                    <span class="text-slate-400 font-semibold uppercase">Observed Evidence:</span>
+                    <pre id="modalEvidence" class="mt-1 p-3 bg-slate-950 border border-slate-800 rounded-lg font-mono text-slate-300 text-[11px] whitespace-pre-wrap break-all"></pre>
+                </div>
+                <div>
+                    <span class="text-slate-400 font-semibold uppercase">Remediation Guidance:</span>
+                    <p id="modalRemediation" class="text-slate-300 mt-1 leading-relaxed"></p>
+                </div>
+                <div id="modalCodeContainer">
+                    <span class="text-slate-400 font-semibold uppercase">Defensive Implementation Snippet:</span>
+                    <pre id="modalCode" class="mt-1 p-3 bg-slate-950 border border-cyan-900/50 rounded-lg font-mono text-cyan-300 text-[11px] whitespace-pre-wrap overflow-x-auto"></pre>
+                </div>
+            </div>
+            <div class="pt-3 border-t border-slate-800 flex justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold">Close</button>
+            </div>
+        </div>
     </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/main.js"></script>
 </body>
 </html>

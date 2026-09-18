@@ -1,8 +1,8 @@
 #!/bin/bash
-# RaidScanner Startup Script
+# GuardScan Startup Script
 
 echo "========================================"
-echo "  RaidScanner - Choose Mode"
+echo "  GuardScan - Choose Mode"
 echo "========================================"
 echo ""
 echo "1. Web Interface (GUI)"

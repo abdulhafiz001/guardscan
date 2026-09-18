@@ -3,8 +3,8 @@ FROM python:3.11-slim
 
 # Metadata
 LABEL maintainer="zahidoverflow"
-LABEL description="RaidScanner - Web Vulnerability Scanner"
-LABEL version="2.0"
+LABEL description="GuardScan - Web Vulnerability Scanner & Security Operations Dashboard"
+LABEL version="2.5"
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -12,15 +12,19 @@ ENV PYTHONUNBUFFERED=1 \
     DISPLAY=:99 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HOST=0.0.0.0 \
+    PORT=5000 \
+    MODE=web
 
-# Install system dependencies in a single layer
+# Install system dependencies & gosu for volume permission handling
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     unzip \
     curl \
     xvfb \
+    gosu \
     fonts-liberation \
     libnss3 \
     libatk-bridge2.0-0 \
@@ -38,7 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install Google Chrome (pinned version for stability)
+# Install Google Chrome
 RUN wget -q -O /tmp/google-chrome-stable_current_amd64.deb \
     https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get update \
@@ -53,44 +57,37 @@ RUN google-chrome --version
 # Set working directory
 WORKDIR /app
 
-# Copy and install Python dependencies first (better layer caching)
+# Copy and install Python dependencies first (layer caching)
 COPY requirements-docker.txt .
 
-# Upgrade pip and install dependencies with locked versions
 RUN pip install --upgrade pip==24.3.1 setuptools==75.6.0 wheel==0.45.1 \
     && pip install --no-cache-dir -r requirements-docker.txt \
     && pip list
 
-# Copy application files
+# Copy application modules and source files
 COPY app.py scanner_cli.py ./
 COPY scripts/ ./scripts/
 COPY payloads/ ./payloads/
 COPY core/ ./core/
 COPY utils/ ./utils/
 COPY web/ ./web/
+COPY scanners/ ./scanners/
 COPY bin/chromedriver-linux64/ /usr/local/bin/
 
-# Set permissions
-RUN chmod +x scripts/*.sh 2>/dev/null || true \
+# Create non-root user and persistent directories
+RUN useradd -m -u 1000 scanner \
+    && mkdir -p /app/output /app/reports /home/scanner/.cache \
+    && chown -R scanner:scanner /app /home/scanner \
+    && chmod -R 777 /app/output /app/reports \
+    && chmod +x scripts/*.sh 2>/dev/null || true \
     && if [ -f /usr/local/bin/chromedriver ]; then chmod +x /usr/local/bin/chromedriver; fi
-
-# Create necessary directories with proper permissions
-RUN mkdir -p /app/output /app/reports \
-    && chmod 777 /app/output /app/reports
 
 # Expose port for web interface
 EXPOSE 5000
 
-# Health check (optional but recommended)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python3 -c "import sys; sys.exit(0)" || exit 1
+# Healthcheck for Coolify / Docker monitoring
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://127.0.0.1:5000/ || python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/')" || exit 1
 
-# Non-root user for security (optional but recommended)
-RUN useradd -m -u 1000 scanner \
-    && chown -R scanner:scanner /app
-USER scanner
-
-# Start Xvfb and run the application
-# Web mode: python3 app.py
-# CLI mode: python3 scanner_cli.py
-CMD ["/bin/bash", "-c", "Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 & sleep 1 && if [ \"$MODE\" = \"web\" ]; then python3 app.py; else python3 scanner_cli.py; fi"]
+# Entrypoint manages Xvfb and runs as non-root user
+ENTRYPOINT ["/bin/bash", "/app/scripts/docker-entrypoint.sh"]

@@ -1,5 +1,5 @@
 """
-Configuration management for RaidScanner
+Configuration management for GuardScan
 """
 
 import os

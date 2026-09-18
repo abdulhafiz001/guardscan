@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# RaidScanner Docker Quick Commands
-# Use this file as a reference for common Docker operations
+# GuardScan Docker Quick Commands
+# Reference for common Docker operations
 
-echo "🔍 RaidScanner Docker Commands"
-echo "================================"
+echo "🔍 GuardScan Docker Commands"
+echo "=============================="
 echo ""
 
 case "${1}" in
@@ -13,21 +13,21 @@ case "${1}" in
     docker compose build
     ;;
   
-  run)
-    echo "Running RaidScanner..."
-    docker compose run --rm raidscanner
+  web)
+    echo "Starting GuardScan Web Dashboard..."
+    docker compose up -d guardscan-web
     ;;
-  
+
+  cli)
+    echo "Running GuardScan CLI..."
+    docker compose run --rm guardscan-cli
+    ;;
+
   shell)
     echo "Opening shell in container..."
-    docker compose run --rm --entrypoint /bin/bash raidscanner
+    docker compose run --rm --entrypoint /bin/bash guardscan-web
     ;;
-  
-  filter)
-    echo "Running filter.sh script..."
-    docker compose run --rm --entrypoint /bin/bash raidscanner -c "./filter.sh"
-    ;;
-  
+
   clean)
     echo "Cleaning up Docker resources..."
     docker compose down
@@ -36,7 +36,7 @@ case "${1}" in
   
   logs)
     echo "Showing container logs..."
-    docker compose logs -f
+    docker compose logs -f guardscan-web
     ;;
   
   update)
@@ -45,20 +45,16 @@ case "${1}" in
     ;;
   
   *)
-    echo "Usage: $0 {build|run|shell|filter|clean|logs|update}"
+    echo "Usage: $0 {build|web|cli|shell|clean|logs|update}"
     echo ""
     echo "Commands:"
-    echo "  build   - Build the Docker image"
-    echo "  run     - Run RaidScanner interactively"
-    echo "  shell   - Open bash shell in container"
-    echo "  filter  - Run the filter.sh script"
-    echo "  clean   - Remove containers and clean up"
-    echo "  logs    - Show container logs"
-    echo "  update  - Rebuild image from scratch"
-    echo ""
-    echo "Examples:"
-    echo "  ./docker-commands.sh build"
-    echo "  ./docker-commands.sh run"
-    echo "  ./docker-commands.sh shell"
+    echo "  web     - Start GuardScan Web Dashboard (recommended)"
+    echo "  cli     - Run GuardScan CLI interactively"
+    echo "  build   - Build Docker image"
+    echo "  shell   - Open bash shell inside container"
+    echo "  logs    - Follow container logs"
+    echo "  clean   - Stop containers and cleanup"
+    echo "  update  - Rebuild image with --no-cache"
+    exit 1
     ;;
 esac

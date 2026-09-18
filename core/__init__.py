@@ -1,5 +1,5 @@
 """
-RaidScanner Core Module
+GuardScan Core Module
 Platform-independent scanning logic
 """
 

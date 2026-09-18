@@ -1,0 +1,95 @@
+name: GuardScan Automated Security Audit
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Target URL to scan'
+        required: true
+        default: 'https://staging.example.com'
+      scan_type:
+        description: 'Scan Module to execute'
+        required: true
+        type: choice
+        options:
+          - all
+          - bola
+          - gateway
+          - lfi
+          - sqli
+          - xss
+          - or
+          - crlf
+        default: 'all'
+      fail_severity:
+        description: 'Fail build threshold'
+        required: true
+        type: choice
+        options:
+          - critical
+          - high
+          - medium
+          - low
+        default: 'high'
+
+jobs:
+  security-audit:
+    name: GuardScan Vulnerability Probe & Remediation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create Reports Directory
+        run: mkdir -p reports
+
+      - name: Execute GuardScan Security Pipeline
+        env:
+          USER_A_TOKEN: ${{ secrets.USER_A_TOKEN || 'test-user-a-bearer-token' }}
+          USER_B_TOKEN: ${{ secrets.USER_B_TOKEN || 'test-user-b-bearer-token' }}
+        run: |
+          TARGET="${{ github.event.inputs.target_url || 'http://localhost:5000' }}"
+          SCAN_TYPE="${{ github.event.inputs.scan_type || 'gateway' }}"
+          FAIL_LEVEL="${{ github.event.inputs.fail_severity || 'high' }}"
+
+          echo "Running GuardScan against $TARGET with scan type $SCAN_TYPE (Fail threshold: $FAIL_LEVEL)..."
+
+          python scanner_cli.py \
+            --ci \
+            --target "$TARGET" \
+            --scan-type "$SCAN_TYPE" \
+            --threads 5 \
+            --token-a "$USER_A_TOKEN" \
+            --token-b "$USER_B_TOKEN" \
+            --fail-on "$FAIL_LEVEL" \
+            --output-pdf "reports/GuardScan_Audit_Report.pdf" \
+            --output-json "reports/GuardScan_Findings.json" \
+            --output-html "reports/GuardScan_Report.html"
+
+      - name: Upload Security Reports & PDF Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guardscan-security-reports
+          path: |
+            reports/*.pdf
+            reports/*.html
+            reports/*.json
+          retention-days: 30

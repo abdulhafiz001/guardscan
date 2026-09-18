@@ -7,6 +7,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
 
+try:
+    from core.pdf_report_generator import PDFReportGenerator
+except ImportError:
+    from pdf_report_generator import PDFReportGenerator
+
 
 class ReportGenerator:
     """Generate vulnerability scan reports"""
@@ -18,6 +23,7 @@ class ReportGenerator:
             self.output_dir = Path(__file__).parent.parent / 'reports'
         
         self.output_dir.mkdir(exist_ok=True)
+        self.pdf_generator = PDFReportGenerator(self.output_dir)
     
     def generate_html_report(self, scan_type: str, results: Dict[str, Any]) -> str:
         """Generate HTML report"""
@@ -32,7 +38,7 @@ class ReportGenerator:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RaidScanner Report - {scan_type}</title>
+    <title>GuardScan Report - {scan_type}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white">
@@ -120,9 +126,12 @@ class ReportGenerator:
         
         if format == 'html':
             content = self.generate_html_report(scan_type, results)
+            return self.save_report(content, filename, format)
         elif format == 'json':
             content = self.generate_json_report(scan_type, results)
+            return self.save_report(content, filename, format)
+        elif format == 'pdf':
+            filepath = self.output_dir / f"{filename}.pdf"
+            return self.pdf_generator.generate(scan_type, results, filepath)
         else:
             raise ValueError(f"Unsupported format: {format}")
-        
-        return self.save_report(content, filename, format)

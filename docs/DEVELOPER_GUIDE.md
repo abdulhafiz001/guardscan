@@ -182,10 +182,10 @@ python app.py
 ### Docker Development
 ```bash
 # Build and run web GUI
-docker compose up -d raidscanner-web
+docker compose up -d guardscan-web
 
 # Or CLI mode
-docker compose run --rm raidscanner-cli
+docker compose run --rm guardscan-cli
 
 # View logs
 docker compose logs -f
@@ -218,13 +218,13 @@ docker compose build --no-cache
 
 **CLI Mode:**
 ```bash
-docker compose run --rm raidscanner-cli
+docker compose run --rm guardscan-cli
 ```
 
 **Web Mode:**
 ```bash
 # Start web server
-docker compose up -d raidscanner-web
+docker compose up -d guardscan-web
 
 # Test LFI scanner via API
 curl -X POST http://localhost:5000/api/scan/lfi \

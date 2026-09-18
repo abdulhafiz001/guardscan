@@ -1,9 +1,9 @@
 @echo off
-REM RaidScanner Docker Run Script for Windows
-REM This script builds and runs the RaidScanner container
+REM GuardScan Docker Run Script for Windows
+REM This script builds and runs the GuardScan container
 
-echo Building RaidScanner Docker image...
-docker-compose build
+echo Building GuardScan Docker image...
+docker compose build
 
 if %errorlevel% neq 0 (
     echo Failed to build Docker image.
@@ -12,9 +12,9 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo Starting RaidScanner container...
-docker-compose run --rm raidscanner
+echo Starting GuardScan Web Container...
+docker compose up -d guardscan-web
 
 echo.
-echo Scan complete! Check the .\output and .\reports directories for results.
+echo GuardScan is running! Open http://localhost:5000 in your browser.
 pause

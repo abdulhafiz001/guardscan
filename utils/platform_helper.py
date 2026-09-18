@@ -5,23 +5,24 @@ Cross-platform compatibility layer
 
 import os
 import platform
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service
+
+try:
+    from webdriver_manager.chrome import ChromeDriverManager
+    from selenium.webdriver.chrome.service import Service
+    _WEBDRIVER_AVAILABLE = True
+except ImportError:
+    ChromeDriverManager = None
+    Service = None
+    _WEBDRIVER_AVAILABLE = False
 
 
 def get_chrome_driver_path():
     """Get correct ChromeDriver for current OS"""
+    if not _WEBDRIVER_AVAILABLE or ChromeDriverManager is None:
+        return None
     system = platform.system()
-    
     try:
-        if system == "Windows":
-            return ChromeDriverManager().install()
-        elif system == "Linux":
-            return ChromeDriverManager().install()
-        elif system == "Darwin":  # macOS
-            return ChromeDriverManager().install()
-        else:
-            return ChromeDriverManager().install()
+        return ChromeDriverManager().install()
     except Exception as e:
         print(f"Error installing ChromeDriver: {e}")
         return None

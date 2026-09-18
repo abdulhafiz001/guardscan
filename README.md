@@ -1,12 +1,11 @@
-# 🛡️ RaidScanner
+# 🛡️ GuardScan
 
-[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-zahidoverflow%2Fraidscanner-blue?logo=docker)](https://hub.docker.com/r/zahidoverflow/raidscanner)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![Selenium](https://img.shields.io/badge/selenium-4.0+-green.svg)](https://www.selenium.dev/)
 [![Flask](https://img.shields.io/badge/flask-3.0-red.svg)](https://flask.palletsprojects.com/)
 
-**RaidScanner** is an advanced, production-ready automated web vulnerability scanner with both **Web GUI** and **CLI** interfaces. Designed for ethical hacking and security testing, it detects critical web vulnerabilities including **LFI (Local File Inclusion)**, **SQLi (SQL Injection)**, **XSS (Cross-Site Scripting)**, **Open Redirect**, and **CRLF Injection**.
+**GuardScan** is an advanced, production-ready automated web vulnerability scanner and security operations dashboard. Designed for ethical hacking, penetration testing, and DevSecOps pipelines, it detects critical web & API vulnerabilities including **BOLA/IDOR (API1:2023)**, **Fintech Payment Gateway & Webhook Flaws**, **LFI (Local File Inclusion)**, **SQLi (SQL Injection)**, **XSS (Cross-Site Scripting)**, **Open Redirect**, and **CRLF Injection**.
 
 ---
 
@@ -15,17 +14,14 @@
 - [Overview](#-overview)
 - [Key Features](#-key-features)
 - [Architecture & Technology Stack](#-architecture--technology-stack)
-- [Quick Start](#-quick-start-docker)
+- [Coolify Deployment Guide](#-coolify-deployment-guide)
+- [Quick Start (Docker)](#-quick-start-docker)
 - [Installation Methods](#-installation-methods)
 - [Usage Guide](#-usage-guide)
 - [Vulnerability Detection Methods](#-vulnerability-detection-methods)
 - [Project Structure](#-project-structure)
 - [Configuration](#-configuration)
-- [Performance & Optimization](#-performance--optimization)
 - [Output & Reports](#-output--reports)
-- [Testing Targets](#-testing-targets)
-- [Troubleshooting](#-troubleshooting)
-- [Documentation](#-documentation)
 - [Contributing](#-contributing)
 - [Legal Disclaimer](#-legal-disclaimer)
 - [License](#-license)
@@ -34,16 +30,16 @@
 
 ## 🎯 Overview
 
-RaidScanner is a comprehensive web security scanning tool built as a **university thesis project** to demonstrate modern vulnerability detection techniques. It combines traditional HTTP-based scanning with browser automation using Selenium WebDriver to detect both server-side and client-side vulnerabilities.
+GuardScan is a comprehensive web and API security scanning tool designed to demonstrate modern vulnerability detection techniques. It combines high-throughput asynchronous HTTP probing with browser automation using Selenium WebDriver to detect both server-side and client-side vulnerabilities.
 
-### What Makes RaidScanner Unique?
+### What Makes GuardScan Unique?
 
-- **Dual Interface**: Choose between modern Web GUI or powerful CLI
-- **Real-time Updates**: WebSocket-based live progress tracking
-- **Browser Automation**: Selenium-powered detection for JavaScript-rendered applications
-- **Containerized**: Fully Dockerized for consistent cross-platform execution
-- **Production Ready**: Modular architecture with comprehensive error handling
-- **Educational Focus**: Well-documented codebase designed for learning
+- **Dual Interface**: Modern dark-theme Tailwind security operations dashboard + rich CLI
+- **BOLA / IDOR API Probe**: Dual-token horizontal authorization testing with JSON schema overlap comparison and length delta heuristics
+- **Localized Fintech Gateway Module**: Pre-configured test vectors for Paystack, Flutterwave, and Monnify signature bypasses and webhook tampering
+- **Developer Remediation PDF Generator**: Generates professional ReportLab PDF reports with CVSS v3.1 scoring, SLA guidance, and copy-pasteable defensive code snippets
+- **DevSecOps CI/CD Ready**: Exit code thresholding (`--fail-on high`) and native GitHub Actions workflow
+- **Coolify & Docker Ready**: Containerized with root `Dockerfile`, `compose.yml`, shared memory allocations, and automatic volume permission management
 
 ### Use Cases
 
@@ -61,6 +57,8 @@ RaidScanner is a comprehensive web security scanning tool built as a **universit
 
 | Vulnerability | Status | Detection Method | Highlights |
 |--------------|--------|-----------------|-----------|
+| **BOLA / IDOR** (API Auth) | ✅ | Dual-Token Context & Schema Similarity | API1:2023 Broken Object Level Auth |
+| **Fintech Gateway Probes** | ✅ | Cryptographic Signature & Webhook Verification | Paystack / Flutterwave / Monnify Bypass |
 | **LFI** (Local File Inclusion) | ✅ | Selenium + Pattern Matching | Detects file access via path traversal |
 | **SQLi** (SQL Injection) | ✅ | Time-based + Error-based | Authentication bypass detection |
 | **XSS** (Cross-Site Scripting) | ✅ | Browser Automation + Alert Detection | Reflected & DOM-based XSS |
@@ -69,14 +67,15 @@ RaidScanner is a comprehensive web security scanning tool built as a **universit
 
 ### Advanced Features
 
-🚀 **Multi-threaded Scanning**: Configurable concurrency (1-10 threads)  
-📊 **Real-time Dashboard**: Live progress updates via WebSocket  
-📁 **Multiple Output Formats**: HTML & JSON reports  
-🎨 **Modern UI**: Gradient-based dark theme with Tailwind CSS  
-🔧 **Customizable Payloads**: Easily modify or add payload files  
+🚀 **Multi-threaded & Async Scanning**: Configurable concurrency (1-10 threads) with requests connection pooling  
+📊 **Real-time Modern Dashboard**: Live progress updates via WebSocket with metrics & interactive vulnerability matrix  
+📄 **Executive & Developer PDF Reports**: ReportLab integration with dynamic NumberedCanvas (Page X of Y), CVSS v3.1, & remediation code snippets  
+📁 **Multiple Output Formats**: PDF, HTML & JSON reports  
+🛡️ **DevSecOps Ready**: Non-interactive CLI flags with `--fail-on` exit codes & GitHub Actions CI/CD pipeline  
+🎨 **Modern UI**: Dark-mode Tailwind CSS security operations dashboard  
+🔧 **Customizable Payloads**: Modular plugin architecture (`scanners/`) with dynamic discovery  
 🐳 **Docker Support**: One-command deployment with volume persistence  
-🎯 **Smart Detection**: Context-aware vulnerability identification  
-⚡ **Performance Optimized**: Resource-efficient Selenium execution
+🎯 **Smart Detection**: Context-aware vulnerability identification with false-positive mitigation heuristics
 
 ---
 
@@ -152,47 +151,90 @@ The easiest and recommended way to run RaidScanner is using Docker. No manual de
 - [Docker](https://docs.docker.com/get-docker/) (20.10+)
 - [Docker Compose](https://docs.docker.com/compose/install/) (2.0+)
 
-### 1️⃣ Web GUI Mode (Recommended)
-
-Perfect for beginners and visual learners. Provides a beautiful dashboard with real-time updates.
+### 1️⃣ Web Dashboard Mode (Recommended)
 
 ```bash
-# Start the web interface
-docker compose up -d raidscanner-web
+# Start the GuardScan web dashboard
+docker compose up -d guardscan-web
 
 # Access at http://localhost:5000
 ```
 
-**Features:**
-- 📊 Interactive dashboard with scanner cards
-- 🔴 Real-time vulnerability detection
-- 📈 Live progress bars and statistics
-- 📄 Report viewer with download options
-
-### 2️⃣ CLI Mode (Advanced)
-
-For terminal enthusiasts and automation workflows. Provides a rich interactive CLI.
+### 2️⃣ CLI Mode (Interactive or CI/CD)
 
 ```bash
-# Start the interactive CLI
-docker compose run --rm raidscanner-cli
-```
+# Interactive Terminal Menu
+docker compose run --rm guardscan-cli
 
-**Features:**
-- 🎯 Menu-driven interface
-- 📊 Live progress bars
-- 🎨 Color-coded output
-- 💾 Automatic report saving
+# DevSecOps CI/CD Non-Interactive Run
+docker compose run --rm guardscan-cli python scanner_cli.py \
+  --ci \
+  --target "https://staging.example.com" \
+  --scan-type bola \
+  --token-a "Bearer eyJhbGciOi..." \
+  --token-b "Bearer eyJhbGciOi..." \
+  --fail-on high \
+  --output-pdf "reports/Audit_Report.pdf"
+```
 
 ### 3️⃣ Stop Services
 
 ```bash
-# Stop web service
+# Stop services
 docker compose down
 
-# Remove all containers and volumes
+# Stop and purge volumes
 docker compose down -v
 ```
+
+---
+
+## 🚀 Coolify Deployment Guide
+
+GuardScan is optimized to deploy seamlessly on [Coolify](https://coolify.io) (Self-Hosted PaaS) using either a Git Repository or Docker Compose.
+
+### Option A: Deploy via GitHub / Git Repository (Recommended)
+
+1. **Add Project in Coolify**:
+   - Go to your Coolify dashboard -> **Projects** -> **New Project** -> **Production Environment**.
+   - Click **+ Add Resource** -> **Public/Private Repository**.
+   - Paste your GuardScan repository URL.
+2. **Build Configuration**:
+   - **Build Pack**: Select `Dockerfile`.
+   - **Dockerfile Location**: `/Dockerfile` (GuardScan includes root `Dockerfile`).
+   - **Port Expose**: Set to `5000`.
+3. **Environment Variables**:
+   Add the following in the Coolify **Environment Variables** tab:
+   ```env
+   PORT=5000
+   HOST=0.0.0.0
+   MODE=web
+   SECRET_KEY=generate-a-secure-random-key-here
+   DEBUG=false
+   ```
+4. **Persistent Storage (Volumes)**:
+   Add persistent volumes under **Storages** in Coolify so scan reports survive redeployments:
+   - Volume 1: `guardscan-reports` -> `/app/reports`
+   - Volume 2: `guardscan-output` -> `/app/output`
+5. **Shared Memory (`shm_size`)**:
+   - Under **Docker Options** / **Custom Docker Run Options**, add:
+     ```
+     --shm-size=2g
+     ```
+     *(This ensures Google Chrome headless browser automation runs with sufficient shared memory).*
+6. **Healthcheck**:
+   - Coolify will automatically detect the built-in Docker healthcheck (`curl -f http://127.0.0.1:5000/ || exit 1`).
+7. **Click Deploy**:
+   - Coolify builds the container and maps your custom domain with automatic SSL via Traefik/Caddy!
+
+---
+
+### Option B: Deploy via Docker Compose on Coolify
+
+1. Click **+ Add Resource** -> **Docker Compose**.
+2. Select your repository or paste the contents of `compose.yml`.
+3. Set your custom domain mapping to port `5000`.
+4. Deploy! Coolify automatically starts `guardscan-web`, provisions persistent volumes, and wires up domain routing.
 
 ---
 
@@ -219,10 +261,10 @@ docker pull zahidoverflow/raidscanner:latest
 docker compose build
 
 # Run Web GUI
-docker compose up -d raidscanner-web
+docker compose up -d guardscan-web
 
 # Run CLI
-docker compose run --rm raidscanner-cli
+docker compose run --rm guardscan-cli
 ```
 
 ### Method 2: Manual Installation (Advanced)
@@ -265,7 +307,7 @@ python scanner_cli.py
 
 1. **Start the Service**
    ```bash
-   docker compose up -d raidscanner-web
+   docker compose up -d guardscan-web
    ```
 
 2. **Access Dashboard**
@@ -299,12 +341,12 @@ python scanner_cli.py
 
 1. **Start CLI**
    ```bash
-   docker compose run --rm raidscanner-cli
+   docker compose run --rm guardscan-cli
    ```
 
 2. **Main Menu**
    ```
-   [ RaidScanner ]
+   [ GuardScan ]
    
    Available Scanners:
      1. LFI Scanner       - Local File Inclusion
@@ -550,8 +592,8 @@ DISPLAY=:99               # Virtual display for Xvfb
 
 ```yaml
 services:
-  raidscanner-web:
-    image: zahidoverflow/raidscanner:latest
+  guardscan-web:
+    image: guardscan:latest
     ports:
       - "5000:5000"
     volumes:
@@ -755,10 +797,10 @@ npm start
 docker ps
 
 # View logs
-docker logs raidscanner-web
+docker logs guardscan-web
 
 # Restart service
-docker compose restart raidscanner-web
+docker compose restart guardscan-web
 ```
 
 #### 2. Chrome/ChromeDriver Errors
@@ -813,7 +855,7 @@ Enable debug logging:
 export DEBUG=True
 
 # Run with verbose logging
-docker compose up raidscanner-web
+docker compose up guardscan-web
 ```
 
 ---
@@ -872,10 +914,10 @@ Contributions are welcome! This project was built for educational purposes and c
 4. **Test Thoroughly**
    ```bash
    # Test web mode
-   docker compose up -d raidscanner-web
+   docker compose up -d guardscan-web
    
    # Test CLI mode
-   docker compose run --rm raidscanner-cli
+   docker compose run --rm guardscan-cli
    ```
 
 5. **Submit Pull Request**

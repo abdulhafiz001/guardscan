@@ -31,7 +31,7 @@ It features both a **Web GUI** for ease of use and a **CLI** for terminal lovers
 
 1. **Start Web Interface:**
    ```bash
-   docker compose up -d raidscanner-web
+   docker compose up -d guardscan-web
    ```
 
 2. **Open Browser:**
@@ -51,7 +51,7 @@ It features both a **Web GUI** for ease of use and a **CLI** for terminal lovers
 
 **Start CLI:**
 ```bash
-docker compose run --rm raidscanner-cli
+docker compose run --rm guardscan-cli
 ```
 Follow the interactive menu to select scanner type and configure options.
 
@@ -80,7 +80,7 @@ Docker provides a fully isolated environment with all dependencies (Chrome, Pyth
    docker compose build
 
    # Run Web GUI
-   docker compose up -d raidscanner-web
+   docker compose up -d guardscan-web
    ```
 
 **Volume Mounts:**
@@ -149,8 +149,8 @@ The CLI offers a robust, interactive terminal experience.
 
 ### Web GUI Not Loading
 - **Check Port**: Ensure port 5000 is free.
-- **Check Logs**: `docker compose logs raidscanner-web`
-- **Restart**: `docker compose restart raidscanner-web`
+- **Check Logs**: `docker compose logs guardscan-web`
+- **Restart**: `docker compose restart guardscan-web`
 
 ### Chrome/Selenium Issues
 - **Memory**: If Chrome crashes in Docker, increase shared memory in `docker-compose.yml`:
@@ -167,4 +167,4 @@ The CLI offers a robust, interactive terminal experience.
 
 ### Network Issues
 - Ensure Docker has internet access.
-- Test connectivity: `docker compose run --rm raidscanner-cli ping google.com`
+- Test connectivity: `docker compose run --rm guardscan-cli ping google.com`

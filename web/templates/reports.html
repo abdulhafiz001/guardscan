@@ -1,102 +1,150 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports - RaidScanner</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            color: #fff;
-        }
-        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
-        h1 { margin: 30px 0; font-size: 2rem; }
-        h1 span { color: #e94560; }
-        a { color: #e94560; text-decoration: none; }
-        .back { margin-bottom: 20px; display: inline-block; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        th { background: rgba(0,0,0,0.3); color: #e94560; }
-        tr:hover { background: rgba(255,255,255,0.05); }
-        .badge {
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-        }
-        .badge.lfi { background: rgba(255, 152, 0, 0.3); color: #FF9800; }
-        .badge.sqli { background: rgba(244, 67, 54, 0.3); color: #F44336; }
-        .badge.xss { background: rgba(156, 39, 176, 0.3); color: #9C27B0; }
-        .badge.or { background: rgba(33, 150, 243, 0.3); color: #2196F3; }
-        .badge.crlf { background: rgba(76, 175, 80, 0.3); color: #4CAF50; }
-        .btn {
-            padding: 8px 15px;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.9rem;
-            margin-right: 5px;
-        }
-        .btn-html { background: #e94560; color: #fff; }
-        .btn-json { background: rgba(255,255,255,0.1); color: #fff; }
-        .empty { text-align: center; color: #666; padding: 40px; }
-    </style>
+    <title>Archived Reports - GuardScan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <div class="container">
-        <a href="/" class="back">← Back to Dashboard</a>
-        <h1><span>Scan</span> Reports</h1>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
 
-        <table id="reportsTable">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="reportsList">
-                <tr><td colspan="4" class="empty">Loading reports...</td></tr>
-            </tbody>
-        </table>
-    </div>
+    <!-- Top Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/" class="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-shield-halved text-white text-xl"></i>
+                </a>
+                <span class="text-xl font-black tracking-tight text-white">GUARD<span class="text-cyan-400">SCAN</span></span>
+                <span class="text-slate-500 text-sm">/ Security Reports Archive</span>
+            </div>
+
+            <a href="/" class="inline-flex items-center space-x-2 text-xs font-semibold px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                <i class="fa-solid fa-arrow-left text-slate-400"></i>
+                <span>Back to Dashboard</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-black text-white">Scan Remediation Reports</h1>
+                <p class="text-xs text-slate-400 mt-1">Download historical vulnerability assessment reports in Developer PDF, HTML, or JSON format.</p>
+            </div>
+
+            <!-- Search / Filter input -->
+            <div class="w-full sm:w-64">
+                <input type="text" id="reportSearchInput" onkeyup="filterReports()" placeholder="Search reports..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 placeholder-slate-600">
+            </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                        <tr>
+                            <th class="py-3.5 px-6">Report Title</th>
+                            <th class="py-3.5 px-4">Scanner Module</th>
+                            <th class="py-3.5 px-4">Generated Date</th>
+                            <th class="py-3.5 px-6 text-right">Available Downloads</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsList" class="divide-y divide-slate-800">
+                        <tr>
+                            <td colspan="4" class="py-12 text-center text-slate-500">
+                                <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-slate-600 block"></i>
+                                Loading reports repository...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
 
     <script>
+        let allReports = [];
+
         async function loadReports() {
             try {
                 const response = await fetch('/api/reports');
                 const data = await response.json();
-
-                const tbody = document.getElementById('reportsList');
-
-                if (!data.reports || data.reports.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="empty">No reports found. Run a scan to generate reports.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = data.reports.map(r => `
+                allReports = data.reports || [];
+                renderReports(allReports);
+            } catch (err) {
+                document.getElementById('reportsList').innerHTML = `
                     <tr>
-                        <td>${r.name}</td>
-                        <td><span class="badge ${r.type}">${r.type.toUpperCase()}</span></td>
-                        <td>${new Date(r.date).toLocaleString()}</td>
-                        <td>
-                            <a href="/api/reports/download?path=${encodeURIComponent(r.path)}" class="btn btn-html" download="${r.name}.html">HTML</a>
-                            <a href="/api/reports/download?path=${encodeURIComponent(r.path)}&format=json" class="btn btn-json" download="${r.name}.json">JSON</a>
+                        <td colspan="4" class="py-8 text-center text-rose-500">
+                            Error loading reports: ${err.message}
                         </td>
                     </tr>
-                `).join('');
-            } catch (err) {
-                document.getElementById('reportsList').innerHTML =
-                    '<tr><td colspan="4" class="empty">Error loading reports: ' + err.message + '</td></tr>';
+                `;
             }
+        }
+
+        function renderReports(reports) {
+            const tbody = document.getElementById('reportsList');
+            if (!reports || reports.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="py-12 text-center text-slate-500">
+                            No scan reports generated yet. Execute a scan from the main dashboard to create PDF & HTML reports.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = reports.map(r => {
+                const typeKey = (r.type || 'unknown').toLowerCase();
+                let typeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">${r.type.toUpperCase()}</span>`;
+
+                if (typeKey === 'bola') {
+                    typeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-400 border border-cyan-800">BOLA / API</span>`;
+                } else if (typeKey === 'gateway') {
+                    typeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">GATEWAY</span>`;
+                } else if (typeKey === 'sqli') {
+                    typeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-400 border border-rose-800">SQLI</span>`;
+                } else if (typeKey === 'lfi') {
+                    typeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-400 border border-amber-800">LFI</span>`;
+                } else if (typeKey === 'xss') {
+                    typeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-400 border border-purple-800">XSS</span>`;
+                }
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3.5 px-6 font-mono text-[11px] text-slate-200 font-semibold">${r.name}</td>
+                        <td class="py-3.5 px-4">${typeBadge}</td>
+                        <td class="py-3.5 px-4 text-slate-400">${new Date(r.date).toLocaleString()}</td>
+                        <td class="py-3.5 px-6 text-right space-x-2">
+                            <a href="/api/reports/download?path=${encodeURIComponent(r.path)}&format=pdf" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 font-medium transition" download="${r.name}.pdf">
+                                <i class="fa-solid fa-file-pdf"></i>
+                                <span>PDF</span>
+                            </a>
+                            <a href="/api/reports/download?path=${encodeURIComponent(r.path)}&format=html" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 font-medium transition" download="${r.name}.html">
+                                <i class="fa-solid fa-code"></i>
+                                <span>HTML</span>
+                            </a>
+                            <a href="/api/reports/download?path=${encodeURIComponent(r.path)}&format=json" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition" download="${r.name}.json">
+                                <i class="fa-solid fa-brackets-curly"></i>
+                                <span>JSON</span>
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterReports() {
+            const term = document.getElementById('reportSearchInput').value.toLowerCase();
+            const filtered = allReports.filter(r =>
+                r.name.toLowerCase().includes(term) || (r.type || '').toLowerCase().includes(term)
+            );
+            renderReports(filtered);
         }
 
         loadReports();

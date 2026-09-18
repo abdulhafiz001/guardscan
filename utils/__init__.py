@@ -1,5 +1,5 @@
 """
-RaidScanner Utilities Module
+GuardScan Utilities Module
 Platform helpers and configuration
 """
 

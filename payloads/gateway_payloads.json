@@ -1,0 +1,138 @@
+[
+  {
+    "name": "Paystack Webhook Without Signature",
+    "gateway": "paystack",
+    "description": "Tests if Paystack webhook endpoint processes events without the x-paystack-signature header",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "event": "charge.success",
+      "data": {
+        "id": 999999999,
+        "domain": "test",
+        "status": "success",
+        "reference": "GUARDSCAN_TEST_REF_001",
+        "amount": 5000000,
+        "currency": "NGN",
+        "customer": {
+          "email": "security-audit@example.com"
+        }
+      }
+    },
+    "expected_safe_statuses": [400, 401, 403],
+    "vuln_indicator_status": [200],
+    "category": "Missing Webhook Cryptographic Verification"
+  },
+  {
+    "name": "Paystack Webhook Invalid Signature Bypass",
+    "gateway": "paystack",
+    "description": "Tests if Paystack webhook endpoint accepts arbitrary or blank HMAC-SHA512 signatures",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-paystack-signature": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "body": {
+      "event": "charge.success",
+      "data": {
+        "id": 999999999,
+        "status": "success",
+        "reference": "GUARDSCAN_FORGED_SIG_002",
+        "amount": 2500000,
+        "currency": "NGN"
+      }
+    },
+    "expected_safe_statuses": [400, 401, 403],
+    "vuln_indicator_status": [200],
+    "category": "Cryptographic Signature Bypass"
+  },
+  {
+    "name": "Flutterwave Webhook Missing verif-hash",
+    "gateway": "flutterwave",
+    "description": "Tests if Flutterwave webhook endpoint verifies secret verif-hash header",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "event": "charge.completed",
+      "data": {
+        "id": 88888888,
+        "tx_ref": "FLW_GUARDSCAN_TEST_003",
+        "flw_ref": "FLW_MOCK_REF",
+        "amount": 100000,
+        "currency": "NGN",
+        "status": "successful"
+      }
+    },
+    "expected_safe_statuses": [401, 403],
+    "vuln_indicator_status": [200],
+    "category": "Missing Webhook Secret Hash"
+  },
+  {
+    "name": "Flutterwave Webhook Forged Secret Hash",
+    "gateway": "flutterwave",
+    "description": "Tests if Flutterwave webhook accepts default or common leaked secret hash",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "verif-hash": "flutterwave-secret-hash-12345"
+    },
+    "body": {
+      "event": "charge.completed",
+      "data": {
+        "id": 88888888,
+        "tx_ref": "FLW_FORGED_HASH_004",
+        "amount": 500000,
+        "currency": "NGN",
+        "status": "successful"
+      }
+    },
+    "expected_safe_statuses": [401, 403],
+    "vuln_indicator_status": [200],
+    "category": "Insecure Secret Hash Validation"
+  },
+  {
+    "name": "Monnify Webhook Without monnify-signature",
+    "gateway": "monnify",
+    "description": "Tests if Monnify webhook processes unverified settlement events",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "eventType": "SUCCESSFUL_TRANSACTION",
+      "eventData": {
+        "product": { "reference": "MNFY_TEST_REF" },
+        "transactionReference": "MNFY_TEST_005",
+        "paymentReference": "MNFY_PAY_REF",
+        "amountPaid": "50000.00",
+        "paymentStatus": "PAID"
+      }
+    },
+    "expected_safe_statuses": [400, 401, 403],
+    "vuln_indicator_status": [200],
+    "category": "Missing Signature Verification"
+  },
+  {
+    "name": "E-Commerce Client-Side Amount & Currency Tampering",
+    "gateway": "generic",
+    "description": "Tests checkout initialization endpoints for zero or negative amount acceptance and currency flipping",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "amount": 0.01,
+      "original_amount": 50000,
+      "currency": "USD",
+      "target_currency": "NGN",
+      "item_id": "item_123"
+    },
+    "expected_safe_statuses": [400, 422],
+    "vuln_indicator_status": [200, 201],
+    "category": "Price / Currency Parameter Tampering"
+  }
+]

@@ -1,11 +1,15 @@
 """
-RaidScanner Web Application
+GuardScan Web Application
 Flask-based GUI for vulnerability scanning
 """
 
-# Eventlet monkey-patching must be done FIRST, before any other imports
-import eventlet
-eventlet.monkey_patch()
+# Eventlet monkey-patching if available
+try:
+    import eventlet
+    eventlet.monkey_patch()
+    _ASYNC_MODE = 'eventlet'
+except ImportError:
+    _ASYNC_MODE = 'threading'
 
 from flask import Flask, render_template, jsonify, request, send_from_directory, send_file
 from flask_socketio import SocketIO, emit
@@ -31,7 +35,7 @@ app.config['JSON_SORT_KEYS'] = False
 CORS(app, resources={r"/api/*": {"origins": Config.CORS_ORIGINS}})
 
 # Initialize SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode=_ASYNC_MODE)
 
 # Initialize core components
 # Note: ScannerEngine is created per-scan to ensure isolation between concurrent scans
@@ -111,6 +115,10 @@ def scan_lfi():
                 # Generate and save report
                 report_gen.generate_and_save('LFI', results, 'html')
                 report_gen.generate_and_save('LFI', results, 'json')
+                try:
+                    report_gen.generate_and_save('LFI', results, 'pdf')
+                except Exception as pdf_err:
+                    print(f"[!] PDF generation warning: {pdf_err}")
 
                 socketio.emit('scan_complete', {
                     'success': True,
@@ -164,6 +172,10 @@ def scan_sqli():
                 # Generate and save report
                 report_gen.generate_and_save('SQLi', results, 'html')
                 report_gen.generate_and_save('SQLi', results, 'json')
+                try:
+                    report_gen.generate_and_save('SQLi', results, 'pdf')
+                except Exception as pdf_err:
+                    print(f"[!] PDF generation warning: {pdf_err}")
 
                 socketio.emit('scan_complete', {
                     'success': True,
@@ -215,6 +227,10 @@ def scan_xss():
                 # Generate and save report
                 report_gen.generate_and_save('XSS', results, 'html')
                 report_gen.generate_and_save('XSS', results, 'json')
+                try:
+                    report_gen.generate_and_save('XSS', results, 'pdf')
+                except Exception as pdf_err:
+                    print(f"[!] PDF generation warning: {pdf_err}")
 
                 socketio.emit('scan_complete', {
                     'success': True,
@@ -265,6 +281,10 @@ def scan_or():
                 # Generate and save report
                 report_gen.generate_and_save('OpenRedirect', results, 'html')
                 report_gen.generate_and_save('OpenRedirect', results, 'json')
+                try:
+                    report_gen.generate_and_save('OpenRedirect', results, 'pdf')
+                except Exception as pdf_err:
+                    print(f"[!] PDF generation warning: {pdf_err}")
 
                 socketio.emit('scan_complete', {
                     'success': True,
@@ -313,6 +333,10 @@ def scan_crlf():
                 # Generate and save report
                 report_gen.generate_and_save('CRLF', results, 'html')
                 report_gen.generate_and_save('CRLF', results, 'json')
+                try:
+                    report_gen.generate_and_save('CRLF', results, 'pdf')
+                except Exception as pdf_err:
+                    print(f"[!] PDF generation warning: {pdf_err}")
 
                 socketio.emit('scan_complete', {
                     'success': True,
@@ -331,6 +355,107 @@ def scan_crlf():
         return jsonify({'success': True, 'message': 'Scan started'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/scan/bola', methods=['POST'])
+def scan_bola():
+    """Broken Object Level Authorization (BOLA / IDOR) API Scan Endpoint"""
+    try:
+        data = request.json or {}
+        urls = data.get('urls', [])
+        threads = data.get('threads', 5)
+        token_a = data.get('token_a', '')
+        token_b = data.get('token_b', '')
+        id_variations = data.get('id_variations', [])
+        scan_id = data.get('scan_id')
+
+        if not urls:
+            return jsonify({'success': False, 'error': 'No URLs or API endpoints provided'}), 400
+
+        scanner = ScannerEngine()
+
+        def progress_callback(progress_data):
+            progress_data['scan_id'] = scan_id
+            socketio.emit('scan_progress', progress_data)
+
+        scanner.add_progress_callback(progress_callback)
+
+        def run_scan():
+            try:
+                results = scanner.scan_bola(urls, token_a=token_a, token_b=token_b,
+                                            id_variations=id_variations, threads=threads)
+                report_gen.generate_and_save('BOLA', results, 'html')
+                report_gen.generate_and_save('BOLA', results, 'json')
+                try:
+                    report_gen.generate_and_save('BOLA', results, 'pdf')
+                except Exception as pdf_err:
+                    print(f"[!] PDF generation warning: {pdf_err}")
+
+                socketio.emit('scan_complete', {
+                    'success': True,
+                    'results': results,
+                    'scan_id': scan_id
+                })
+            except Exception as e:
+                socketio.emit('scan_error', {
+                    'success': False,
+                    'error': str(e),
+                    'scan_id': scan_id
+                })
+
+        socketio.start_background_task(run_scan)
+        return jsonify({'success': True, 'message': 'BOLA Scan started'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/scan/gateway', methods=['POST'])
+def scan_gateway():
+    """Fintech Gateway & Payment Webhook Probe Endpoint"""
+    try:
+        data = request.json or {}
+        urls = data.get('urls', [])
+        threads = data.get('threads', 5)
+        scan_id = data.get('scan_id')
+
+        if not urls:
+            return jsonify({'success': False, 'error': 'No webhook or checkout URLs provided'}), 400
+
+        scanner = ScannerEngine()
+
+        def progress_callback(progress_data):
+            progress_data['scan_id'] = scan_id
+            socketio.emit('scan_progress', progress_data)
+
+        scanner.add_progress_callback(progress_callback)
+
+        def run_scan():
+            try:
+                results = scanner.scan_gateway(urls, threads=threads)
+                report_gen.generate_and_save('Gateway', results, 'html')
+                report_gen.generate_and_save('Gateway', results, 'json')
+                try:
+                    report_gen.generate_and_save('Gateway', results, 'pdf')
+                except Exception as pdf_err:
+                    print(f"[!] PDF generation warning: {pdf_err}")
+
+                socketio.emit('scan_complete', {
+                    'success': True,
+                    'results': results,
+                    'scan_id': scan_id
+                })
+            except Exception as e:
+                socketio.emit('scan_error', {
+                    'success': False,
+                    'error': str(e),
+                    'scan_id': scan_id
+                })
+
+        socketio.start_background_task(run_scan)
+        return jsonify({'success': True, 'message': 'Gateway Scan started'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 
 @app.route('/api/reports', methods=['GET'])
@@ -361,6 +486,10 @@ def get_reports():
                     scan_type = 'lfi'
                 elif name_lower.startswith('openredirect_') or name_lower.startswith('or_'):
                     scan_type = 'or'
+                elif name_lower.startswith('bola_') or 'bola_report' in name_lower:
+                    scan_type = 'bola'
+                elif name_lower.startswith('gateway_') or 'gateway_report' in name_lower:
+                    scan_type = 'gateway'
                 
                 reports.append({
                     'name': name,
@@ -402,7 +531,15 @@ def download_report():
                 return send_file(json_path, as_attachment=True)
             else:
                 return jsonify({'error': 'JSON report not found'}), 404
-        
+
+        # Handle PDF format
+        if format_type == 'pdf':
+            pdf_path = file_path.with_suffix('.pdf')
+            if pdf_path.exists():
+                return send_file(pdf_path, as_attachment=True)
+            else:
+                return jsonify({'error': 'PDF report not found'}), 404
+
         # Default to HTML
         return send_file(file_path, as_attachment=True)
         
@@ -417,7 +554,7 @@ def download_report():
 @socketio.on('connect')
 def handle_connect():
     """Client connected"""
-    emit('connected', {'message': 'Connected to RaidScanner', 'timestamp': time.time()})
+    emit('connected', {'message': 'Connected to GuardScan', 'timestamp': time.time()})
 
 
 @socketio.on('disconnect')
@@ -452,7 +589,7 @@ def internal_error(error):
 
 if __name__ == '__main__':
     print("=" * 80)
-    print("🚀 RaidScanner Web Interface")
+    print("🚀 GuardScan Web Interface")
     print("=" * 80)
     print(f"📍 URL: http://{Config.HOST}:{Config.PORT}")
     print(f"🔧 Debug Mode: {Config.DEBUG}")
