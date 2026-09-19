@@ -42,11 +42,7 @@ class XSSScanner(BaseScanner):
             start_time = time.time()
 
             try:
-                chrome_options = Options()
-                for arg in Config.CHROME_OPTIONS:
-                    chrome_options.add_argument(arg)
-
-                driver = webdriver.Chrome(options=chrome_options)
+                driver = Config.create_chrome_driver()
                 driver.set_page_load_timeout(10)
                 driver.get(target_url)
 

@@ -43,6 +43,43 @@ class Config:
         '--disable-infobars',
         '--disable-notifications'
     ]
+
+    @classmethod
+    def create_chrome_driver(cls):
+        """Create and configure a headless Chrome or Chromium WebDriver instance"""
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+
+        options = Options()
+        for arg in cls.CHROME_OPTIONS:
+            options.add_argument(arg)
+
+        # Detect Chrome/Chromium binary on Linux or container environments
+        for bin_path in [
+            os.environ.get('CHROME_BIN', ''),
+            '/usr/bin/google-chrome',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser'
+        ]:
+            if bin_path and os.path.exists(bin_path):
+                options.binary_location = bin_path
+                break
+
+        # Detect ChromeDriver path
+        service = None
+        for driver_path in [
+            os.environ.get('CHROMEDRIVER_PATH', ''),
+            '/usr/local/bin/chromedriver',
+            '/usr/bin/chromedriver'
+        ]:
+            if driver_path and os.path.exists(driver_path):
+                from selenium.webdriver.chrome.service import Service
+                service = Service(executable_path=driver_path)
+                break
+
+        if service:
+            return webdriver.Chrome(service=service, options=options)
+        return webdriver.Chrome(options=options)
     
     @classmethod
     def ensure_directories(cls):

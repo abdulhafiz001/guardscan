@@ -1,5 +1,5 @@
-# Use Python 3.11 slim as base image (pinned to linux/amd64 for Chrome compatibility)
-FROM --platform=linux/amd64 python:3.11-slim-bookworm
+# Multi-architecture base image (supports both amd64 and arm64 without platform warnings)
+FROM python:3.11-slim-bookworm
 
 # Metadata
 LABEL maintainer="zahidoverflow"
@@ -15,41 +15,36 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     HOST=0.0.0.0 \
     PORT=5000 \
-    MODE=web
+    MODE=web \
+    CHROME_BIN=/usr/bin/chromium \
+    CHROMEDRIVER_PATH=/usr/bin/chromedriver
 
-# Install system dependencies, build tools, Xvfb, gosu, and Google Chrome via official signed repository
+# Install system dependencies, Chromium, ChromeDriver, and Xvfb
+# Note: Debian Bookworm provides chromium and chromium-driver natively for both amd64 and arm64
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
+    curl \
     gnupg \
     unzip \
-    curl \
     xvfb \
     gosu \
     git \
     build-essential \
     ca-certificates \
     fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libdrm2 \
-    libgbm1 \
+    chromium \
+    chromium-driver \
     libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    xdg-utils \
-    && install -m 0755 -d /usr/share/keyrings \
-    && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends google-chrome-stable \
+    libgbm1 \
+    libasound2 \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && ln -sf /usr/bin/chromium /usr/bin/google-chrome \
+    && ln -sf /usr/bin/chromium /usr/bin/chrome \
+    && ln -sf /usr/bin/chromedriver /usr/local/bin/chromedriver
 
-# Verify Chrome installation
-RUN google-chrome --version
+# Verify Chromium and ChromeDriver installation
+RUN chromium --version && chromedriver --version
 
 # Set working directory
 WORKDIR /app
