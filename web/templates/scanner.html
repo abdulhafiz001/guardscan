@@ -1,277 +1,236 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ scan_type|upper }} Scanner - GuardScan</title>
+    <title>{{ scan_type|upper }} Dedicated Probe - GuardScan Enterprise Security</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            color: #fff;
+        .cyber-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
         }
-        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
-        h1 { margin: 30px 0; font-size: 2rem; }
-        h1 span { color: #e94560; }
-        a { color: #e94560; text-decoration: none; }
-        .back { margin-bottom: 20px; display: inline-block; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: #aaa; }
-        textarea, input[type="number"] {
-            width: 100%;
-            padding: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            background: rgba(0,0,0,0.3);
-            color: #fff;
-            font-family: monospace;
-            font-size: 14px;
-        }
-        textarea { min-height: 150px; resize: vertical; }
-        input[type="number"] { max-width: 100px; }
-        button {
-            background: #e94560;
-            color: #fff;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        button:hover { background: #ff6b6b; transform: scale(1.02); }
-        button:disabled { background: #666; cursor: not-allowed; }
-        .results {
-            margin-top: 30px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            padding: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .result-item {
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 13px;
-        }
-        .result-item.vuln { background: rgba(233, 69, 96, 0.2); border-left: 3px solid #e94560; }
-        .result-item.safe { background: rgba(100, 255, 100, 0.1); border-left: 3px solid #4CAF50; }
-        .result-item.info { background: rgba(100, 100, 255, 0.1); border-left: 3px solid #2196F3; }
-        .progress {
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #e94560, #ff6b6b);
-            width: 0%;
-            transition: width 0.3s;
-        }
-        .status { color: #aaa; margin: 10px 0; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0b1120; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <a href="/" class="back">← Back to Dashboard</a>
-        <h1><span>{{ scan_type|upper }}</span> Scanner</h1>
+<body class="bg-[#0b1120] text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-white cyber-grid flex flex-col justify-between">
 
-        <form id="scanForm">
-            <div class="form-group">
-                <label>Target URLs (one per line)</label>
-                <textarea id="urls" placeholder="http://target.com/page?id=1&#10;http://target.com/api/search?q=test"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label>Threads (1-10)</label>
-                <input type="number" id="threads" value="5" min="1" max="10">
-            </div>
-
-            <button type="submit" id="scanBtn">Start Scan</button>
-        </form>
-
-        <div id="statsPanel" style="display: none; margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px;">
-            <div style="display: flex; gap: 30px;">
-                <div>
-                    <span style="color: #aaa;">Scanned:</span>
-                    <span id="statScanned" style="font-weight: bold; color: #2196F3;">0</span>
+    <!-- Top Navigation -->
+    <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <a href="/" class="flex items-center space-x-3">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-shield-halved text-white text-lg"></i>
                 </div>
                 <div>
-                    <span style="color: #aaa;">Vulnerabilities:</span>
-                    <span id="statVuln" style="font-weight: bold; color: #e94560;">0</span>
+                    <span class="text-xl font-black tracking-tight text-white">GUARD<span class="text-cyan-400">SCAN</span></span>
+                    <span class="text-slate-500 text-xs font-mono ml-2">/ {{ scan_type|upper }} Dedicated Probe</span>
                 </div>
-                <div>
-                    <span style="color: #aaa;">Safe:</span>
-                    <span id="statSafe" style="font-weight: bold; color: #4CAF50;">0</span>
+            </a>
+
+            <div class="flex items-center space-x-3">
+                <div id="connectionStatus" class="flex items-center text-xs font-medium px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-slate-500 mr-2"></span>
+                    <span>Connecting...</span>
                 </div>
+                <a href="/" class="inline-flex items-center space-x-2 text-xs font-semibold px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                    <i class="fa-solid fa-arrow-left text-slate-400"></i>
+                    <span>Main Studio</span>
+                </a>
             </div>
         </div>
+    </header>
 
-        <div class="progress" id="progressContainer" style="display: none;">
-            <div class="progress-bar" id="progressBar"></div>
-        </div>
-        <p class="status" id="status"></p>
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 flex-grow">
 
-        <div class="results" id="results" style="display: none;">
-            <h3>Scan Results</h3>
-            <div id="resultsList"></div>
+        <!-- Header Banner -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+            <div>
+                <div class="flex items-center space-x-2">
+                    <span class="px-2.5 py-1 rounded text-xs font-black bg-cyan-950 text-cyan-400 border border-cyan-800">MODULE</span>
+                    <h1 class="text-2xl font-black text-white"><span class="text-cyan-400">{{ scan_type|upper }}</span> Security Probe</h1>
+                </div>
+                <p class="text-xs text-slate-400 mt-1">Dedicated vulnerability assessment and penetration execution console for {{ scan_type|upper }}.</p>
+            </div>
+            
+            <a href="/reports" class="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-semibold">
+                <i class="fa-solid fa-folder-closed text-slate-400"></i>
+                <span>View Reports</span>
+            </a>
         </div>
-    </div>
+
+        <!-- Configuration Box -->
+        <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+            <form id="dedicatedScanForm" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Target URLs or API Endpoints</label>
+                    <textarea id="dedicatedUrls" rows="5" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 font-mono placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 leading-relaxed" placeholder="http://yourdomain.com/target?id=1&#10;http://yourdomain.com/api/test"></textarea>
+                    <p class="text-[11px] text-slate-500 font-mono mt-1">Enter one target endpoint per line.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Concurrent Threads (1-10)</label>
+                        <input type="number" id="dedicatedThreads" value="5" min="1" max="10" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-slate-200 font-mono focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <span id="scanStatus" class="text-xs text-slate-400 font-mono">Ready to probe.</span>
+                    <button type="submit" id="startDedicatedBtn" class="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Start {{ scan_type|upper }} Probe</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Progress Box -->
+        <section id="dedicatedProgress" class="hidden bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3">
+            <div class="flex items-center justify-between text-xs font-semibold">
+                <span class="text-cyan-400 flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    <span>Running {{ scan_type|upper }} tests...</span>
+                </span>
+                <span id="dedicatedPct" class="text-slate-300 font-mono">0%</span>
+            </div>
+            <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-slate-800">
+                <div id="dedicatedBar" class="bg-gradient-to-r from-cyan-500 to-blue-600 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="currentUrlLog" class="text-[11px] font-mono text-slate-400 truncate">Connecting to endpoints...</p>
+        </section>
+
+        <!-- Live Results Feed -->
+        <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 class="text-sm font-bold text-slate-200">Execution Telemetry Stream</h3>
+            <div id="dedicatedResults" class="space-y-2 max-h-96 overflow-y-auto font-mono text-xs">
+                <div class="text-center py-8 text-slate-500 text-xs">
+                    No results yet. Launch scan above to start live stream.
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span><b>GuardScan v2.5 PRO</b> — Enterprise Vulnerability & API Penetration Engine</span>
+            <span>Final Year Cybersecurity Software Engineering Project Demo</span>
+        </div>
+    </footer>
 
     <script>
-        const socket = io();
-        const scanType = '{{ scan_type }}';
-        let currentScanId = null;  // Track the current scan session
+        const scanType = "{{ scan_type }}".toLowerCase();
+        let socket = io({ transports: ['websocket', 'polling'] });
+        let activeId = null;
 
         socket.on('connect', () => {
-            console.log('Connected to server');
+            const el = document.getElementById('connectionStatus');
+            el.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-2"></span><span>Connected</span>';
+        });
+
+        socket.on('disconnect', () => {
+            const el = document.getElementById('connectionStatus');
+            el.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 mr-2"></span><span>Disconnected</span>';
         });
 
         socket.on('scan_progress', (data) => {
-            // Only process results for our current scan session
-            // If no scan is active (currentScanId is null), ignore all events
-            // If scan is active, only accept events with matching scan_id
-            if (!currentScanId || data.scan_id !== currentScanId) {
-                return;  // Ignore results from other scans or when no scan is active
+            if (data.scan_id && activeId && data.scan_id !== activeId) return;
+            const scanned = data.scanned || 0;
+            const total = Math.max(data.total || 1, 1);
+            const pct = Math.min(100, Math.round((scanned / total) * 100));
+
+            document.getElementById('dedicatedBar').style.width = `${pct}%`;
+            document.getElementById('dedicatedPct').innerText = `${pct}%`;
+            if (data.current_url) {
+                document.getElementById('currentUrlLog').innerText = `Target: ${data.current_url}`;
             }
 
-            document.getElementById('progressContainer').style.display = 'block';
-
-            // Calculate progress percentage from scanned/total or use provided progress
-            const progress = data.progress || (data.total > 0 ? Math.round((data.scanned / data.total) * 100) : 0);
-            document.getElementById('progressBar').style.width = progress + '%';
-            document.getElementById('status').textContent = data.message || `Scanned ${data.scanned || 0}/${data.total || '?'} - Found: ${data.found || 0} vulnerabilities`;
-
-            // Handle both 'result' (singular) and 'results' (array) formats
-            if (data.result) {
-                addResult(data.result);
-            }
             if (data.results && Array.isArray(data.results)) {
-                data.results.forEach(r => addResult(r));
+                appendResults(data.results);
             }
         });
 
         socket.on('scan_complete', (data) => {
-            // Only process completion for our current scan session
-            // If no scan is active or scan_id doesn't match, ignore
-            if (!currentScanId || data.scan_id !== currentScanId) {
-                return;  // Ignore completion from other scans or when no scan is active
-            }
-
-            document.getElementById('scanBtn').disabled = false;
-            document.getElementById('scanBtn').textContent = 'Start Scan';
-            document.getElementById('status').textContent = 'Scan complete!';
-            document.getElementById('progressBar').style.width = '100%';
-
-            // Handle results - could be array or object with 'results' property
-            if (data.results) {
-                const resultsArray = Array.isArray(data.results) ? data.results : (data.results.results || []);
-                resultsArray.forEach(r => addResult(r));
-            }
-
-            currentScanId = null;  // Clear the scan ID
+            if (data.scan_id && activeId && data.scan_id !== activeId) return;
+            document.getElementById('dedicatedBar').style.width = '100%';
+            document.getElementById('dedicatedPct').innerText = '100%';
+            document.getElementById('scanStatus').innerText = 'Scan finished! Report generated in archive.';
+            document.getElementById('startDedicatedBtn').disabled = false;
         });
 
-        socket.on('scan_error', (data) => {
-            // Only process errors for our current scan session
-            // If no scan is active or scan_id doesn't match, ignore
-            if (!currentScanId || data.scan_id !== currentScanId) {
-                return;  // Ignore errors from other scans or when no scan is active
+        function appendResults(results) {
+            const container = document.getElementById('dedicatedResults');
+            if (container.querySelector('.text-slate-500')) {
+                container.innerHTML = '';
             }
 
-            document.getElementById('scanBtn').disabled = false;
-            document.getElementById('scanBtn').textContent = 'Start Scan';
-            document.getElementById('status').textContent = 'Error: ' + data.error;
-            currentScanId = null;  // Clear the scan ID
-        });
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            results.forEach(r => {
+                const isVuln = r.vulnerable;
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-xl border ${isVuln ? 'bg-rose-950/60 border-rose-800 text-rose-300' : 'bg-slate-950/80 border-slate-800 text-slate-300'} flex items-start justify-between gap-4`;
+                div.innerHTML = `
+                    <div class="space-y-1 truncate">
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isVuln ? 'bg-rose-900 text-rose-200' : 'bg-emerald-950 text-emerald-400'}">${isVuln ? 'VULNERABLE' : 'SAFE'}</span>
+                            <span class="font-bold text-slate-200">${r.title || scanType.toUpperCase()}</span>
+                        </div>
+                        <p class="truncate text-cyan-400 text-[11px]">${r.url || ''}</p>
+                    </div>
+                    <span class="text-slate-500 text-[11px] flex-shrink-0">${r.response_time ? r.response_time + 's' : ''}</span>
+                `;
+                container.prepend(div);
+            });
         }
 
-        let vulnCount = 0;
-        let safeCount = 0;
-
-        function addResult(result) {
-            const list = document.getElementById('resultsList');
-            document.getElementById('results').style.display = 'block';
-
-            const item = document.createElement('div');
-            item.className = 'result-item ' + (result.vulnerable ? 'vuln' : 'safe');
-            
-            // Update stats
-            if (result.vulnerable) {
-                vulnCount++;
-            } else {
-                safeCount++;
-            }
-            document.getElementById('statVuln').textContent = vulnCount;
-            document.getElementById('statSafe').textContent = safeCount;
-            document.getElementById('statScanned').textContent = vulnCount + safeCount;
-            
-            item.innerHTML = `
-                <strong>${result.vulnerable ? 'VULNERABLE' : 'Safe'}</strong>: ${escapeHtml(result.url || result.target || 'Unknown')}
-                ${result.payload ? '<br>Payload: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 3px;">' + escapeHtml(result.payload) + '</code>' : ''}
-            `;
-            list.appendChild(item);
-            list.scrollTop = list.scrollHeight;
-        }
-
-        document.getElementById('scanForm').addEventListener('submit', async (e) => {
+        document.getElementById('dedicatedScanForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const urlsRaw = document.getElementById('dedicatedUrls').value.trim();
+            if (!urlsRaw) return alert('Please enter at least one target URL.');
+            const urls = urlsRaw.split('\n').map(u => u.trim()).filter(Boolean);
+            const threads = parseInt(document.getElementById('dedicatedThreads').value) || 5;
 
-            const urls = document.getElementById('urls').value.trim().split('\n').filter(u => u.trim());
-            const threads = parseInt(document.getElementById('threads').value) || 5;
+            activeId = 'dedicated_' + Date.now();
+            document.getElementById('dedicatedProgress').classList.remove('hidden');
+            document.getElementById('dedicatedBar').style.width = '0%';
+            document.getElementById('dedicatedPct').innerText = '0%';
+            document.getElementById('startDedicatedBtn').disabled = true;
+            document.getElementById('scanStatus').innerText = 'Starting probe...';
 
-            if (!urls.length) {
-                alert('Please enter at least one URL');
-                return;
-            }
+            let endpointMap = {
+                lfi: '/api/scan/lfi',
+                sqli: '/api/scan/sqli',
+                xss: '/api/scan/xss',
+                or: '/api/scan/or',
+                crlf: '/api/scan/crlf',
+                bola: '/api/scan/bola',
+                gateway: '/api/scan/gateway'
+            };
 
-            // Generate a unique scan ID for this session
-            currentScanId = 'scan_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-
-            // Reset stats
-            vulnCount = 0;
-            safeCount = 0;
-            document.getElementById('statVuln').textContent = '0';
-            document.getElementById('statSafe').textContent = '0';
-            document.getElementById('statScanned').textContent = '0';
-            document.getElementById('statsPanel').style.display = 'block';
-
-            document.getElementById('scanBtn').disabled = true;
-            document.getElementById('scanBtn').textContent = 'Scanning...';
-            document.getElementById('resultsList').innerHTML = '';
-            document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('status').textContent = 'Starting scan...';
-            document.getElementById('progressContainer').style.display = 'block';
+            let targetApi = endpointMap[scanType] || `/api/scan/${scanType}`;
 
             try {
-                const response = await fetch(`/api/scan/${scanType}`, {
+                const res = await fetch(targetApi, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ urls, threads, scan_id: currentScanId })
+                    body: JSON.stringify({ urls, threads, scan_id: activeId })
                 });
-
-                const data = await response.json();
+                const data = await res.json();
                 if (!data.success) {
-                    throw new Error(data.error || 'Scan failed');
+                    alert('Scan failed to launch: ' + (data.error || 'Unknown error'));
+                    document.getElementById('startDedicatedBtn').disabled = false;
                 }
             } catch (err) {
-                document.getElementById('status').textContent = 'Error: ' + err.message;
-                document.getElementById('scanBtn').disabled = false;
-                document.getElementById('scanBtn').textContent = 'Start Scan';
-                currentScanId = null;
+                alert('Request failed: ' + err.message);
+                document.getElementById('startDedicatedBtn').disabled = false;
             }
         });
     </script>
