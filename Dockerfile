@@ -71,12 +71,12 @@ RUN useradd -m -u 1000 scanner \
     && chmod -R 777 /app/output /app/reports \
     && chmod +x scripts/*.sh 2>/dev/null || true
 
-# Expose port for web interface (both standard and Coolify default)
-EXPOSE 5000 3000
+# Expose port for web interface (both standard 5000 and Coolify default 3000)
+EXPOSE 3000 5000
 
-# Dynamic Healthcheck that respects the PORT environment variable (defaults to 5000 if not set)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD sh -c 'P="${PORT:-5000}"; curl -f "http://127.0.0.1:$P/" || python3 -c "import os, urllib.request; p=os.environ.get(\"PORT\", \"5000\"); urllib.request.urlopen(\"http://127.0.0.1:\" + p + \"/\")"' || exit 1
+# Healthcheck for Coolify / Docker monitoring (automatically tests PORT env var, 3000, and 5000)
+HEALTHCHECK --interval=20s --timeout=10s --start-period=15s --retries=3 \
+    CMD python3 /app/scripts/healthcheck.py || exit 1
 
 # Entrypoint manages Xvfb and runs as non-root user
 ENTRYPOINT ["/bin/bash", "/app/scripts/docker-entrypoint.sh"]

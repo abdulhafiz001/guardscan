@@ -36,8 +36,8 @@ services:
     networks:
       - guardscan_net
     healthcheck:
-      test: ["CMD-SHELL", "sh -c 'P=\"$${PORT:-5000}\"; curl -f \"http://127.0.0.1:$$P/\" || python3 -c \"import os, urllib.request; p=os.environ.get(\\\"PORT\\\", \\\"5000\\\"); urllib.request.urlopen(\\\"http://127.0.0.1:\\\" + p + \\\"/\\\")\"' || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "python3 /app/scripts/healthcheck.py || exit 1"]
+      interval: 20s
       timeout: 10s
       retries: 3
       start_period: 15s
