@@ -1,0 +1,13 @@
+# Auto detect text files and perform LF normalization on checkout
+* text=auto
+
+# Enforce LF endings on shell scripts and Dockerfiles across all OS platforms
+*.sh text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.js text eol=lf

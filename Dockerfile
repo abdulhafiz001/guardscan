@@ -1,5 +1,5 @@
-# Use Python 3.11 slim as base image
-FROM python:3.11-slim
+# Use Python 3.11 slim as base image (pinned to linux/amd64 for Chrome compatibility)
+FROM --platform=linux/amd64 python:3.11-slim-bookworm
 
 # Metadata
 LABEL maintainer="zahidoverflow"
@@ -17,7 +17,7 @@ ENV PYTHONUNBUFFERED=1 \
     PORT=5000 \
     MODE=web
 
-# Install system dependencies & gosu for volume permission handling
+# Install system dependencies, build tools, Xvfb, gosu, and Google Chrome via official signed repository
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
@@ -25,29 +25,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     xvfb \
     gosu \
+    git \
+    build-essential \
+    ca-certificates \
     fonts-liberation \
-    libnss3 \
+    libasound2 \
     libatk-bridge2.0-0 \
     libdrm2 \
-    libxkbcommon0 \
+    libgbm1 \
+    libnss3 \
+    libx11-xcb1 \
     libxcomposite1 \
     libxdamage1 \
     libxfixes3 \
     libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    libatspi2.0-0 \
-    libwayland-client0 \
-    ca-certificates \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Install Google Chrome
-RUN wget -q -O /tmp/google-chrome-stable_current_amd64.deb \
-    https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    xdg-utils \
+    && install -m 0755 -d /usr/share/keyrings \
+    && curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends /tmp/google-chrome-stable_current_amd64.deb \
-    && rm /tmp/google-chrome-stable_current_amd64.deb \
+    && apt-get install -y --no-install-recommends google-chrome-stable \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -58,11 +55,10 @@ RUN google-chrome --version
 WORKDIR /app
 
 # Copy and install Python dependencies first (layer caching)
-COPY requirements-docker.txt .
+COPY requirements.txt .
 
-RUN pip install --upgrade pip==24.3.1 setuptools==75.6.0 wheel==0.45.1 \
-    && pip install --no-cache-dir -r requirements-docker.txt \
-    && pip list
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir -r requirements.txt
 
 # Copy application modules and source files
 COPY app.py scanner_cli.py ./
@@ -72,15 +68,13 @@ COPY core/ ./core/
 COPY utils/ ./utils/
 COPY web/ ./web/
 COPY scanners/ ./scanners/
-COPY bin/chromedriver-linux64/ /usr/local/bin/
 
 # Create non-root user and persistent directories
 RUN useradd -m -u 1000 scanner \
     && mkdir -p /app/output /app/reports /home/scanner/.cache \
     && chown -R scanner:scanner /app /home/scanner \
     && chmod -R 777 /app/output /app/reports \
-    && chmod +x scripts/*.sh 2>/dev/null || true \
-    && if [ -f /usr/local/bin/chromedriver ]; then chmod +x /usr/local/bin/chromedriver; fi
+    && chmod +x scripts/*.sh 2>/dev/null || true
 
 # Expose port for web interface
 EXPOSE 5000
