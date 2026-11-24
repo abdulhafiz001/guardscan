@@ -3,13 +3,19 @@ GuardScan Web Application
 Flask-based GUI for vulnerability scanning
 """
 
-# Eventlet monkey-patching if available
-try:
-    import eventlet
-    eventlet.monkey_patch()
-    _ASYNC_MODE = 'eventlet'
-except ImportError:
-    _ASYNC_MODE = 'threading'
+# Eventlet monkey-patching if available.
+# Python 3.13+ threading uses start_joinable_thread, which current Eventlet
+# does not provide, so fall back to the threading async mode.
+import sys
+
+_ASYNC_MODE = 'threading'
+if sys.version_info < (3, 13):
+    try:
+        import eventlet
+        eventlet.monkey_patch()
+        _ASYNC_MODE = 'eventlet'
+    except Exception:
+        _ASYNC_MODE = 'threading'
 
 from flask import Flask, render_template, jsonify, request, send_from_directory, send_file
 from flask_socketio import SocketIO, emit

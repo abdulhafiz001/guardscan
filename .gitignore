@@ -35,3 +35,8 @@ tmp/
 
 # Archives
 *.zip
+
+# Local project write-ups
+*.docx
+CODEBASE_DOCUMENTATION.md
+VULNERABILITY_TEST_GUIDE.md
